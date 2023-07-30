@@ -1,3 +1,5 @@
 .vscode/
 *.tflite
 __pycache__
+
+venv/

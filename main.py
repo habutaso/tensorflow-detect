@@ -1,7 +1,9 @@
 import cv2
 from tflite_support.task import core, processor, vision
 
+import camera
 import utils
+from detector import DEFAULT_MAX_RESULTS, DEFAULT_MODEL_FILENAME, DEFAULT_SCORE_THRESHOLD, DEFAULT_THREADS, Detector
 
 TEXT_COLOR = (255, 255, 0)  # cyan
 THREADS = 4
@@ -17,23 +19,15 @@ def detect(image, detector):
 def main():
     counter = 0
 
-    cap = cv2.VideoCapture(0)
+    camera = camera.Camera(0)
 
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 480)
-    cap.set(cv2.CAP_PROP_FPS, 15)
-
-    base_options = core.BaseOptions(file_name=MODEL_FILENAME, num_threads=THREADS)
-    detection_options = processor.DetectionOptions(max_results=3, score_threshold=0.6)
-    detector_options = vision.ObjectDetectorOptions(base_options=base_options, detection_options=detection_options)
-
-    detector = vision.ObjectDetector.create_from_options(detector_options)
+    detector = Detector(model_filename=DEFAULT_MODEL_FILENAME, num_threads=DEFAULT_THREADS, max_results=DEFAULT_MAX_RESULTS, score_threshold=DEFAULT_SCORE_THRESHOLD)
 
     detection_result = processor.DetectionResult([])
 
-    while cap.isOpened():
+    while camera.device.isOpened():
         counter += 1
-        _, image = cap.read()
+        _, image = camera.device.read()
         image = cv2.flip(image, 1)
 
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
