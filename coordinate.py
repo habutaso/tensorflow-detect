@@ -15,10 +15,9 @@ class Coordinate:
 
 
 class DetectionCoordinate:
-    def __init__(self, detection: processor.Detection, frame_gravity: Tuple[int, int]):
+    def __init__(self, detection: processor.Detection):
         self.detection = detection
         self.box = self.detection.bounding_box
-        self.frame_gravity = Coordinate(x=frame_gravity[0], y=frame_gravity[1])
 
     @property
     def origin_x(self) -> int:
@@ -47,10 +46,3 @@ class DetectionCoordinate:
     @property
     def gravity(self) -> Coordinate:
         return Coordinate(x=self.origin_x + int(self.width / 2), y=self.origin_y + int(self.height / 2))
-
-    @property
-    def gravity_diff_from_center(self) -> Coordinate:
-        gravity = self.gravity
-        diff_x = gravity.x - self.frame_gravity.x
-        diff_y = gravity.y - self.frame_gravity.y
-        return Coordinate(x=diff_x, y=diff_y)

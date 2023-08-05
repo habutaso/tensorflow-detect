@@ -5,30 +5,47 @@ import cv2
 import numpy as np
 from tflite_support.task import processor
 
-from coordinate import DetectionCoordinate
-from constants import TEXT_COLOR, FONT_THICKNESS, FONT_MARGIN, FPS_COUNT, ROW_SIZE
+from coordinate import Coordinate, DetectionCoordinate
+from constants import TEXT_COLOR, FONT_THICKNESS, FONT_MARGIN, FPS_COUNT, FONT_SIZE, ROW_SIZE
 
 
 fps = 0
 start_time = 0
 
 
-def show_detect_object_rectangle(
-    image: np.ndarray, detection_result: processor.DetectionResult, frame_gravity: Tuple[int, int]
-) -> np.ndarray:
+def get_diff_from_center(frame_center: Coordinate, detect_coord: Coordinate) -> Tuple[int, int]:
+    """中心からの差分を出力する
+
+    Args:
+        frame_center (Coordinate): 画像の重心座標
+        detect_coord (Coordinate): 検出範囲の重心座標
+
+    Returns:
+        Tuple[int, int]: [差分w, 差分h]
+    """
+    diff_w = detect_coord.x - frame_center.x
+    diff_h = detect_coord.y - frame_center.y
+    return diff_w, diff_h
+
+
+def show_detect_object_rectangle(image: np.ndarray, detection_result: processor.DetectionResult) -> np.ndarray:
+    h, w, _ = image.shape
+    frame_center = Coordinate(w // 2, h // 2)
+
     for detection in detection_result.detections:
-        coordinate = DetectionCoordinate(detection, frame_gravity)
+        coordinate = DetectionCoordinate(detection)
+        point_diff = get_diff_from_center(frame_center, coordinate.gravity)
+        print(point_diff)
 
         cv2.rectangle(image, coordinate.start_point.tuple, coordinate.end_point.tuple, TEXT_COLOR, FONT_THICKNESS)
         cv2.line(
             image,
-            pt1=(frame_gravity[0], frame_gravity[1]),
+            pt1=frame_center.tuple,
             pt2=coordinate.gravity.tuple,
             color=TEXT_COLOR,
             thickness=FONT_THICKNESS,
             lineType=cv2.LINE_4,
         )
-        print(coordinate.gravity_diff_from_center)
 
         category = detection.categories[0]
         category_name = category.category_name
