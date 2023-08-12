@@ -1,58 +1,79 @@
 import cv2
 import time
 
-from tflite_support.task import core, processor, vision
+import RPi.GPIO as GPIO
+from typing import Tuple
 
-import utils
-from constants import CAMERA_FPS, FRAME_HEIGHT, FRAME_WIDTH, MAX_RESULTS, THREADS, THRESHOLD
+from tflite_support.task import processor, vision
+
+import visualize
+from camera import Camera
+from constants import DEFAULT_MAX_RESULTS, DEFAULT_MODEL_FILENAME, DEFAULT_SCORE_THRESHOLD, DEFAULT_THREADS
+from coordinate import Coordinate, DetectionCoordinate
+from detector import Detector
 
 MODEL_FILENAME = "efficientdet_lite0.tflite"
 
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(17, GPIO.OUT)
+GPIO.setup(18, GPIO.OUT)
+GPIO.setup(23, GPIO.OUT)
 
-def detect(image, detector):
-    tensor = vision.TensorImage.create_from_array(image)
-    detection_result = detector.detect(tensor)
-    return detection_result
+px_1 = GPIO.PWM(17, 50)
+px_2 = GPIO.PWM(18, 50)
+
+px_1.start(0)
+px_2.start(0)
+
+
+def move_motor(vector: Tuple[int, int]):
+    print(vector)
+    pass
 
 
 def main():
     counter = 0
 
-    cap = cv2.VideoCapture(0)
+    camera = Camera(0)
 
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
-    cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
-
-    base_options = core.BaseOptions(file_name=MODEL_FILENAME, num_threads=THREADS)
-    detection_options = processor.DetectionOptions(max_results=MAX_RESULTS, score_threshold=THRESHOLD)
-    detector_options = vision.ObjectDetectorOptions(base_options=base_options, detection_options=detection_options)
-
-    detector = vision.ObjectDetector.create_from_options(detector_options)
+    detector = Detector(
+        model_filename=DEFAULT_MODEL_FILENAME,
+        num_threads=DEFAULT_THREADS,
+        max_results=DEFAULT_MAX_RESULTS,
+        score_threshold=DEFAULT_SCORE_THRESHOLD,
+    )
 
     detection_result = processor.DetectionResult([])
 
-    while cap.isOpened():
+    while camera.device.isOpened():
         counter += 1
-        _, image = cap.read()
+        _, image = camera.device.read()
         image = cv2.flip(image, 1)
 
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         if counter % 5 == 1:
             start = time.time()
-            detection_result = detect(rgb_image, detector)
+            detection_result = detector.detect(rgb_image)
             end = time.time()
             print(f"elapsed time: {end - start}")
 
-        image = utils.show_detect_object_rectangle(image, detection_result)
+        image = visualize.show_detect_object_rectangle(image, detection_result)
+        visualize.show_fps(image, counter)
 
-        utils.show_fps(image, counter)
+        cv2.imshow("detector", image)
+
+        if len(detection_result.detections) < 1:
+            continue
+
+        test_detection = detection_result.detections[0]
+        coordinate = DetectionCoordinate(test_detection)
+        h, w, _ = image.shape
+        point_diff = visualize.get_diff_from_center(Coordinate(w, h), coordinate.gravity)
+        move_motor(point_diff)
 
         if cv2.waitKey(1) == "q":
             break
-
-        cv2.imshow("detector", image)
 
 
 if __name__ == "__main__":

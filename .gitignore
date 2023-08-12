@@ -1,2 +1,5 @@
 .vscode/
 *.tflite
+__pycache__
+.git.old
+venv/
