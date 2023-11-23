@@ -4,7 +4,7 @@ from tflite_support.task import core, processor, vision
 class Detector:
     def __init__(self, model_filename: str, num_threads: int, max_results: int, score_threshold: float):
         self.base_options = core.BaseOptions(file_name=model_filename, num_threads=num_threads)
-        self.detection_options = processor.DetectionOptions(max_results=max_results, score_threshold=score_threshold)
+        self.detection_options = processor.DetectionOptions(max_results=max_results, score_threshold=score_threshold, category_name_allowlist=["bird", "person"])
         self.detector_options = vision.ObjectDetectorOptions(
             base_options=self.base_options, detection_options=self.detection_options
         )

@@ -1,14 +1,6 @@
 #!/bin/bash
 
-if [ $# -eq 0 ]; then
-  DATA_DIR="./"
-else
-  DATA_DIR="$1"
-fi
-
-# Install Python dependencies
-python3 -m pip install pip --upgrade
-python3 -m pip install -r requirements.txt
+DATA_DIR=$PWD
 
 # Download TF Lite models
 FILE=${DATA_DIR}/efficientdet_lite0.tflite
