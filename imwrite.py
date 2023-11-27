@@ -10,6 +10,7 @@ class ImWrite:
         self.write_dir = write_dir
         
     def write(self, image):
-        filepath = f"{self.write_dir}{time.time()}{secrets.token_hex(6)}.jpg"
+        filepath = f"{self.write_dir}{int(time.time() // 1000)}{secrets.token_hex(6)}.jpg"
+        print(filepath)
         cv2.imwrite(filepath, image)
 

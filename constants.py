@@ -22,4 +22,4 @@ ROW_SIZE = 10
 FONT_SIZE = 1
 FONT_THICKNESS = 2
 
-DEFAULT_WRITE_DIR = "~/environment/image_index/images/"
+DEFAULT_WRITE_DIR = "/home/pi/environment/image_index/images/"

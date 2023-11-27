@@ -35,16 +35,16 @@ def move_motor(vector: Tuple[int, int]):
     global px_2_duty
 
     print(vector)
-    duty_x = (10 + int(abs(vector[0]) / DEFAULT_FRAME_WIDTH_HALF * 100) / 6)
+    duty_x = (15 + int(abs(vector[0]) / DEFAULT_FRAME_WIDTH_HALF * 100) / 15)
     # duty_x = 6
-    px_1.ChangeDutyCycle(100)
-    px_2.ChangeDutyCycle(100)
+    # px_1.ChangeDutyCycle(100)
+    # px_2.ChangeDutyCycle(100)
     if vector[0] > 0:
         px_1_duty = duty_x
         px_2_duty = 0
     elif vector[0] == 0:
-        px_1_duty = 0
-        px_2_duty = 0
+        px_1_duty = 100
+        px_2_duty = 100
     else:
         px_1_duty = 0
         px_2_duty = duty_x
@@ -75,7 +75,7 @@ def main():
         score_threshold=DEFAULT_SCORE_THRESHOLD,
     )
 
-    imwrite = imwrite()
+    imwrite = ImWrite()
 
     detection_result = processor.DetectionResult([])
 
@@ -89,8 +89,8 @@ def main():
         if counter % 3 == 1:
             # start = time.time()
             detection_result = detector.detect(rgb_image)
-            # end = time.time()
             # print(f"elapsed time: {end - start}")
+            # end = time.time()
 
         if detection_result.detections:
             image = visualize.show_detect_object_rectangle(image, detection_result)
