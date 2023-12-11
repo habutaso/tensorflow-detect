@@ -1,7 +1,6 @@
 # setup
 
 1. aarch64アーキテクチャのマシンを用意する(raspberry piなど)
-1. [miniforge](https://github.com/conda-forge/miniforge)をインストールする(BSDライセンスのconda環境)
 1. 1で用意したマシンにこのリポジトリをクローンする
 ```bash
 
