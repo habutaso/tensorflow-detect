@@ -1,10 +1,9 @@
 import cv2
-import time
 
 import RPi.GPIO as GPIO
 from typing import Tuple
 
-from tflite_support.task import processor, vision
+from tflite_support.task import processor
 
 import visualize
 from camera import Camera
@@ -35,14 +34,14 @@ def move_motor(vector: Tuple[int, int]):
     global px_2_duty
 
     print(vector)
-    duty_x = (15 + int(abs(vector[0]) / DEFAULT_FRAME_WIDTH_HALF * 100) / 15)
+    duty_x = (20 + int(abs(vector[1]) / DEFAULT_FRAME_WIDTH_HALF * 100) / 10)
     # duty_x = 6
     # px_1.ChangeDutyCycle(100)
     # px_2.ChangeDutyCycle(100)
-    if vector[0] > 0:
+    if vector[1] > 0:
         px_1_duty = duty_x
         px_2_duty = 0
-    elif vector[0] == 0:
+    elif vector[1] == 0:
         px_1_duty = 100
         px_2_duty = 100
     else:
@@ -58,6 +57,7 @@ def move_motor(vector: Tuple[int, int]):
 def stop_motor():
     px_1.ChangeDutyCycle(100)
     px_2.ChangeDutyCycle(100)
+
 
 
 
