@@ -12,12 +12,16 @@ from detector import Detector
 from visualize import get_diff_from_center
 
 
-detection_result = processor.DetectionResult([])
 sys.stderr = open("./err.log", "w")
 
 
 class KarasuSystem:
     # on_enter_XXX は状態遷移時必ず実行される共通処理
+    def __init__(self):
+        self.detection_result = processor.DetectionResult([])
+        self.point_diffs_buf = []
+        
+
     def on_enter_Search(self):
         # カラス検索処理を実行
         print("探索モード: カラスを探しています...")
@@ -34,38 +38,41 @@ class KarasuSystem:
             self.no_crow_detected() # 再度Searchに遷移
 
     def on_enter_Tracking(self):
-        global detection_result
         # 追跡処理を実行
         print("追跡モード: カラスを追跡しています...")
 
-        diff_buf = []
+        self.detection_result = detect_karasu()
 
-        while len(diff_buf) < 6:
-            if not detection_result.detections:
-                diff_buf.append((None, None))
-                continue
-            detect_object = detection_result.detections[0]
-            coordinate = DetectionCoordinate(detect_object)
-            point_diff: Tuple[int, int] = get_diff_from_center(CENTER, coordinate.gravity)
-            diff_buf.append(point_diff)
-            move_camera(point_diff)
-
-        # 追跡できなくなった場合
-        if not all(d[0] for d in diff_buf):
-            diff_buf = []
+        if len(self.point_diffs_buf) > 4 and not all(d[0] for d in self.point_diffs_buf):
+            # 追跡できなくなった場合
+            print("no")
+            self.point_diffs_buf = []
             self.crow_lost()
 
+        if not self.detection_result.detections:
+            self.point_diffs_buf.append((None, None))
+            self.continue_tracking()
+        detect_object = self.detection_result.detections[0]
+        coordinate = DetectionCoordinate(detect_object)
+        point_diff: Tuple[int, int] = get_diff_from_center(CENTER, coordinate.gravity)
+        move_camera(point_diff)
+        print("diff: ", self.point_diffs_buf)
+        self.point_diffs_buf.append(point_diff)
+
+
         # 一定時間中心とのズレが少なかった場合
-        if all(d[0] < 20 for d in diff_buf):
-            diff_buf = []
+        if all(d[0] is not None and d[0] < 20 for d in self.point_diffs_buf):
+            self.point_diffs_buf = []
             self.crow_centered()
+        else:
+            self.continue_tracking()
 
     def on_enter_Shooting(self):
         # 射撃処理
         print("射撃モード: カラスを狙っています...")
         # レーザーを照射しながら、少し動かす
         # やりたいことが終わったら
-        time.sleep(2)
+        shoot_karasu()
         self.shooting_done()
 
     def on_exit_Shooting(self):
@@ -156,7 +163,7 @@ def detect_karasu():
 
 # カラスを探索するために首振りをする関数
 def search_karasu():
-    global detection_result
+    detection_result = []
 
     p1 = GPIO.PWM(HORIZON_MOTOR_SIGNAL_PIN1, PWM_FREQUENCY)
     p2 = GPIO.PWM(HORIZON_MOTOR_SIGNAL_PIN2, PWM_FREQUENCY)
@@ -170,14 +177,14 @@ def search_karasu():
     for i in range(5):
         p1.ChangeDutyCycle(dr1[i])
         p2.ChangeDutyCycle(dr2[i])
-        sleep(0.5)
+        sleep(0.2)
         detection_result = detect_karasu()
         if detection_result.detections:
             return True
     for i in range(5):
         p2.ChangeDutyCycle(dr1[i])
         p1.ChangeDutyCycle(dr2[i])
-        sleep(0.5)
+        sleep(0.2)
         detection_result = detect_karasu()
         if detection_result.detections:
             return True
@@ -192,17 +199,31 @@ def move_camera(diff: Tuple[int, int]):
     p2.start(DUTY_CYCLE_ZERO)
 
     if diff[0] < 0:
-        dr1 = DUTY_CYCLE_LOW
+        dr1 = DUTY_CYCLE_MIDDLE
         dr2 = DUTY_CYCLE_ZERO
     else:
         dr1 = DUTY_CYCLE_ZERO
-        dr2 = DUTY_CYCLE_LOW
+        dr2 = DUTY_CYCLE_MIDDLE
 
-    p1.ChangeDutyCycle(dr1)
-    p2.ChangeDutyCycle(dr2)
-    
+    for _ in range(3):
+        p1.ChangeDutyCycle(dr1)
+        p2.ChangeDutyCycle(dr2)
 
-    
+
+def shoot_karasu():
+    p1 = GPIO.PWM(HORIZON_MOTOR_SIGNAL_PIN1, PWM_FREQUENCY)
+    p2 = GPIO.PWM(HORIZON_MOTOR_SIGNAL_PIN2, PWM_FREQUENCY)
+    p1.start(DUTY_CYCLE_ZERO)
+    p2.start(DUTY_CYCLE_ZERO)
+
+    dr1 = [DUTY_CYCLE_HIGHT, DUTY_CYCLE_ZERO] * 8
+    dr2 = dr1[::-1]
+
+    for c1, c2 in zip(dr1, dr2):
+        p1.ChangeDutyCycle(c1)
+        p2.ChangeDutyCycle(c2)
+        sleep(0.1)
+
 
 # 中断処理
 def abort_callback(channel):
@@ -226,6 +247,7 @@ def init_statemachine():
         { 'trigger': 'crow_detected', 'source': 'Search', 'dest': 'Tracking' },
         { 'trigger': 'crow_lost', 'source': 'Tracking', 'dest': 'Search' },
         { 'trigger': 'crow_centered', 'source': 'Tracking', 'dest': 'Shooting' },
+        { 'trigger': 'continue_tracking', 'source': 'Tracking', 'dest': 'Tracking' },
         { 'trigger': 'shooting_done', 'source': 'Shooting', 'dest': 'Search' },
         { 'trigger': 'abort', 'source': '*', 'dest': 'Quit' }  # '*'は全ての状態から遷移可能を意味する
     ]
@@ -253,6 +275,8 @@ def main():
     except KeyboardInterrupt:
         # Ctrl+Cが押された場合の処理
         pass
+    except Exception as e:
+        print(e)
     finally:
         # プログラム終了時にGPIOをクリーンアップ
         print("GPIOをクリーンアップ...")
@@ -260,3 +284,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
