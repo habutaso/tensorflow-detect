@@ -16,6 +16,6 @@ bash setup.sh
 # run
 ```bash
 . venv/bin/activate
-python main.py
+python karasu_system.py
 ```
 

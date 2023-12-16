@@ -39,14 +39,14 @@ def move_motor(vector: Tuple[int, int]):
     # px_1.ChangeDutyCycle(100)
     # px_2.ChangeDutyCycle(100)
     if vector[1] > 0:
-        px_1_duty = duty_x
-        px_2_duty = 0
-    elif vector[1] == 0:
-        px_1_duty = 100
-        px_2_duty = 100
-    else:
-        px_1_duty = 0
         px_2_duty = duty_x
+        px_1_duty = 0
+    elif vector[1] == 0:
+        px_2_duty = 100
+        px_1_duty = 100
+    else:
+        px_2_duty = 0
+        px_1_duty = duty_x
 
     px_1.ChangeDutyCycle(px_1_duty)
     px_2.ChangeDutyCycle(px_2_duty)
@@ -82,7 +82,7 @@ def main():
     while camera.device.isOpened():
         counter += 1
         _, image = camera.device.read()
-        image = cv2.flip(image, 1)
+        # image = cv2.flip(image, 1)
 
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -98,7 +98,7 @@ def main():
             visualize.show_fps(image, counter)
 
         cv2.imshow("detector", image)
-        imwrite.write(image)
+        # imwrite.write(image)
 
         if len(detection_result.detections) < 1:
             GPIO.output(27, False)

@@ -20,7 +20,6 @@ class KarasuSystem:
     def __init__(self):
         self.detection_result = processor.DetectionResult([])
         self.point_diffs_buf = []
-        
 
     def on_enter_Search(self):
         # カラス検索処理を実行
@@ -37,6 +36,7 @@ class KarasuSystem:
             print("見つかりませんでした")
             self.no_crow_detected() # 再度Searchに遷移
 
+
     def on_enter_Tracking(self):
         # 追跡処理を実行
         print("追跡モード: カラスを追跡しています...")
@@ -45,7 +45,6 @@ class KarasuSystem:
 
         if len(self.point_diffs_buf) > 4 and not all(d[0] for d in self.point_diffs_buf):
             # 追跡できなくなった場合
-            print("no")
             self.point_diffs_buf = []
             self.crow_lost()
 
@@ -56,7 +55,6 @@ class KarasuSystem:
         coordinate = DetectionCoordinate(detect_object)
         point_diff: Tuple[int, int] = get_diff_from_center(CENTER, coordinate.gravity)
         move_camera(point_diff)
-        print("diff: ", self.point_diffs_buf)
         self.point_diffs_buf.append(point_diff)
 
 
@@ -123,8 +121,6 @@ karasu_system = KarasuSystem()
 
 # カメラを初期化
 camera = Camera(0)
-camera.set_wh(CAMERA_WIDTH, CAMERA_HEIGHT)
-camera.set_fps(CAMERA_FPS)
 
 # 物体検知を初期化
 detector = Detector(
@@ -156,6 +152,7 @@ def init_pin_setting():
 def detect_karasu():
     # カラスの検知
     _, image = camera.device.read()
+    cv2.imshow("a", image)
     # image = cv2.flip(image, 1)
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     return detector.detect(rgb_image)
@@ -171,25 +168,26 @@ def search_karasu():
     p2.start(DUTY_CYCLE_ZERO)
 
     # 左右にフリフリする処理　徐々に速度をあげ、徐々に下げる、逆回転させる
-    dr1=[DUTY_CYCLE_LOW  ,DUTY_CYCLE_LOW,DUTY_CYCLE_LOW ,DUTY_CYCLE_LOW ,DUTY_CYCLE_LOW ]
-    dr2=[DUTY_CYCLE_ZERO ,DUTY_CYCLE_ZERO  ,DUTY_CYCLE_ZERO  ,DUTY_CYCLE_ZERO   ,DUTY_CYCLE_ZERO]
+    # dr1=[DUTY_CYCLE_LOW  ,DUTY_CYCLE_LOW,DUTY_CYCLE_LOW ,DUTY_CYCLE_LOW ,DUTY_CYCLE_LOW ]
+    dr1 = [DUTY_CYCLE_LOW] * 5
+    dr2=[DUTY_CYCLE_ZERO] * 5
 
     for i in range(5):
         p1.ChangeDutyCycle(dr1[i])
         p2.ChangeDutyCycle(dr2[i])
-        sleep(0.2)
         detection_result = detect_karasu()
         if detection_result.detections:
             return True
+        sleep(0.5)
     for i in range(5):
         p2.ChangeDutyCycle(dr1[i])
         p1.ChangeDutyCycle(dr2[i])
-        sleep(0.2)
         detection_result = detect_karasu()
         if detection_result.detections:
             return True
+        sleep(0.5)
 
-    return  False
+    return False
 
 
 def move_camera(diff: Tuple[int, int]):
@@ -205,9 +203,10 @@ def move_camera(diff: Tuple[int, int]):
         dr1 = DUTY_CYCLE_ZERO
         dr2 = DUTY_CYCLE_MIDDLE
 
-    for _ in range(3):
+    for _ in range(2):
         p1.ChangeDutyCycle(dr1)
         p2.ChangeDutyCycle(dr2)
+        sleep(0.05)
 
 
 def shoot_karasu():
@@ -283,5 +282,11 @@ def main():
         GPIO.cleanup()
 
 if __name__ == "__main__":
+    while not camera.device.isOpened():
+        sleep(0.2)
+    for _ in range(10):
+        _, image = camera.device.read()
+        cv2.imshow("a", image)
+        sleep(0.1)
     main()
 
