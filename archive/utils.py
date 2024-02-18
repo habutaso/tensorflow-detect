@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from tflite_support.task import processor
 
-from constants import (
+from archive.constants import (
     FONT_MARGIN,
     FONT_SIZE,
     FONT_THICKNESS,

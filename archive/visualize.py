@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 from tflite_support.task import processor
 
-from coordinate import Coordinate, DetectionCoordinate
+from utils.coordinate import Coordinate, DetectionCoordinate
 from constants import TEXT_COLOR, FONT_THICKNESS, FONT_MARGIN, FPS_COUNT, FONT_SIZE, ROW_SIZE
 
 

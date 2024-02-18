@@ -6,10 +6,10 @@ from time import sleep
 from tflite_support.task import processor
 from typing import Tuple
 
-from camera import Camera
-from coordinate import Coordinate, DetectionCoordinate
-from detector import Detector
-from visualize import get_diff_from_center
+from devices.camera import Camera
+from utils.coordinate import Coordinate, DetectionCoordinate
+from utils.detector import Detector
+from archive.visualize import get_diff_from_center
 
 
 sys.stderr = open("./err.log", "w")
@@ -34,8 +34,7 @@ class KarasuSystem:
         # 見つからないまま一定時間経過
         else:
             print("見つかりませんでした")
-            self.no_crow_detected() # 再度Searchに遷移
-
+            self.no_crow_detected()  # 再度Searchに遷移
 
     def on_enter_Tracking(self):
         # 追跡処理を実行
@@ -57,7 +56,6 @@ class KarasuSystem:
         move_camera(point_diff)
         self.point_diffs_buf.append(point_diff)
 
-
         # 一定時間中心とのズレが少なかった場合
         if all(d[0] is not None and d[0] < 20 for d in self.point_diffs_buf):
             self.point_diffs_buf = []
@@ -78,10 +76,11 @@ class KarasuSystem:
 
     def on_enter_Quit(self):
         print("システム終了: システムを終了します。")
-    
+
     # after_ はafterで指定した特定のイベントヒット時に状態遷移後最後に実行される処理
     def after_initializing(self):
         print("初期化完了時の処理")
+
 
 # 環境変数設定----------------------------------------------------------------------
 
@@ -93,7 +92,7 @@ VERTICAL_MOTOR_SIGNAL_PIN2 = 23
 ABORT_SIGNAL_PIN = 5
 LASER_PIN = 9
 
-PWM_FREQUENCY = 1000 # PWMの周波数(回転速度やトルク、雑音に影響)
+PWM_FREQUENCY = 1000  # PWMの周波数(回転速度やトルク、雑音に影響)
 
 # デューティー比の設定
 DUTY_CYCLE_MAX = 100
@@ -127,9 +126,10 @@ detector = Detector(
     model_filename=DETECTOR_MODEL_FILENAME,
     num_threads=DETECTOR_THREADS,
     max_results=DETECTOR_DETECT_NUM_MAX,
-    score_threshold=DETECTOR_SCORE_THRESHOLD
+    score_threshold=DETECTOR_SCORE_THRESHOLD,
 )
 # 環境変数設定-終-------------------------------------------------------------------
+
 
 def init_pin_setting():
     GPIO.setmode(GPIO.BCM)
@@ -170,7 +170,7 @@ def search_karasu():
     # 左右にフリフリする処理　徐々に速度をあげ、徐々に下げる、逆回転させる
     # dr1=[DUTY_CYCLE_LOW  ,DUTY_CYCLE_LOW,DUTY_CYCLE_LOW ,DUTY_CYCLE_LOW ,DUTY_CYCLE_LOW ]
     dr1 = [DUTY_CYCLE_LOW] * 5
-    dr2=[DUTY_CYCLE_ZERO] * 5
+    dr2 = [DUTY_CYCLE_ZERO] * 5
 
     for i in range(5):
         p1.ChangeDutyCycle(dr1[i])
@@ -234,25 +234,26 @@ def abort_callback(channel):
     else:
         return
 
+
 # ステートマシンの初期化処理
 def init_statemachine():
     # 状態リストを定義
-    states = ['Initial', 'Search', 'Tracking', 'Shooting', 'Quit']
+    states = ["Initial", "Search", "Tracking", "Shooting", "Quit"]
 
     # 遷移リストを定義
     transitions = [
-        { 'trigger': 'initialize_done', 'source': 'Initial', 'dest': 'Search' },
-        { 'trigger': 'no_crow_detected', 'source': 'Search', 'dest': 'Search' },
-        { 'trigger': 'crow_detected', 'source': 'Search', 'dest': 'Tracking' },
-        { 'trigger': 'crow_lost', 'source': 'Tracking', 'dest': 'Search' },
-        { 'trigger': 'crow_centered', 'source': 'Tracking', 'dest': 'Shooting' },
-        { 'trigger': 'continue_tracking', 'source': 'Tracking', 'dest': 'Tracking' },
-        { 'trigger': 'shooting_done', 'source': 'Shooting', 'dest': 'Search' },
-        { 'trigger': 'abort', 'source': '*', 'dest': 'Quit' }  # '*'は全ての状態から遷移可能を意味する
+        {"trigger": "initialize_done", "source": "Initial", "dest": "Search"},
+        {"trigger": "no_crow_detected", "source": "Search", "dest": "Search"},
+        {"trigger": "crow_detected", "source": "Search", "dest": "Tracking"},
+        {"trigger": "crow_lost", "source": "Tracking", "dest": "Search"},
+        {"trigger": "crow_centered", "source": "Tracking", "dest": "Shooting"},
+        {"trigger": "continue_tracking", "source": "Tracking", "dest": "Tracking"},
+        {"trigger": "shooting_done", "source": "Shooting", "dest": "Search"},
+        {"trigger": "abort", "source": "*", "dest": "Quit"},  # '*'は全ての状態から遷移可能を意味する
     ]
 
-    machine = Machine(model=karasu_system, states=states, transitions=transitions, initial='Initial')
-    
+    machine = Machine(model=karasu_system, states=states, transitions=transitions, initial="Initial")
+
     return
 
 
@@ -270,7 +271,7 @@ def main():
 
         # 初期化終了→Search状態へ遷移
         karasu_system.initialize_done()  # Searchに遷移
-        
+
     except KeyboardInterrupt:
         # Ctrl+Cが押された場合の処理
         pass
@@ -281,6 +282,7 @@ def main():
         print("GPIOをクリーンアップ...")
         GPIO.cleanup()
 
+
 if __name__ == "__main__":
     while not camera.device.isOpened():
         sleep(0.2)
@@ -289,4 +291,3 @@ if __name__ == "__main__":
         cv2.imshow("a", image)
         sleep(0.1)
     main()
-

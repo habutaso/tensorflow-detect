@@ -2,7 +2,7 @@ import time
 import secrets
 import cv2
 
-from constants import DEFAULT_WRITE_DIR
+from archive.constants import DEFAULT_WRITE_DIR
 
 
 class ImWrite:

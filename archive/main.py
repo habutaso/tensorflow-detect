@@ -5,12 +5,18 @@ from typing import Tuple
 
 from tflite_support.task import processor
 
-import visualize
-from camera import Camera
-from constants import DEFAULT_MAX_RESULTS, DEFAULT_MODEL_FILENAME, DEFAULT_SCORE_THRESHOLD, DEFAULT_THREADS, DEFAULT_FRAME_WIDTH_HALF
-from coordinate import Coordinate, DetectionCoordinate
-from detector import Detector
-from imwrite import ImWrite
+import archive.visualize as visualize
+from devices.camera import Camera
+from archive.constants import (
+    DEFAULT_MAX_RESULTS,
+    DEFAULT_MODEL_FILENAME,
+    DEFAULT_SCORE_THRESHOLD,
+    DEFAULT_THREADS,
+    DEFAULT_FRAME_WIDTH_HALF,
+)
+from utils.coordinate import Coordinate, DetectionCoordinate
+from utils.detector import Detector
+from archive.imwrite import ImWrite
 
 MODEL_FILENAME = "efficientdet_lite0.tflite"
 
@@ -29,12 +35,13 @@ px_2.start(0)
 px_1_duty = 0
 px_2_duty = 0
 
+
 def move_motor(vector: Tuple[int, int]):
     global px_1_duty
     global px_2_duty
 
     print(vector)
-    duty_x = (20 + int(abs(vector[1]) / DEFAULT_FRAME_WIDTH_HALF * 100) / 10)
+    duty_x = 20 + int(abs(vector[1]) / DEFAULT_FRAME_WIDTH_HALF * 100) / 10
     # duty_x = 6
     # px_1.ChangeDutyCycle(100)
     # px_2.ChangeDutyCycle(100)
@@ -50,15 +57,14 @@ def move_motor(vector: Tuple[int, int]):
 
     px_1.ChangeDutyCycle(px_1_duty)
     px_2.ChangeDutyCycle(px_2_duty)
-        
+
     # print(duty_x)
     # px_1.ChangeDutyCycle(duty_x)
+
 
 def stop_motor():
     px_1.ChangeDutyCycle(100)
     px_2.ChangeDutyCycle(100)
-
-
 
 
 def main():
