@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from typing import Tuple
 
-from tflite_support.task import processor
-
 
 @dataclass
 class Coordinate:
@@ -15,9 +13,8 @@ class Coordinate:
 
 
 class DetectionCoordinate:
-    def __init__(self, detection: processor.Detection):
-        self.detection = detection
-        self.box = self.detection.bounding_box
+    def __init__(self, box):
+        self.box = box 
 
     @property
     def origin_x(self) -> int:
