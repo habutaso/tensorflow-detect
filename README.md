@@ -1,22 +1,34 @@
-# setup
+# 対応環境
+1. raspberry pi
+1. Mac (M1)
+  - raspberry piでコードを書くのは非効率であるため、開発環境を選択できるようにしている
+  - importで読み込まれるライブラリはrapsberry piと異なる
+    - RPi.GPIO -> Mock.GPIO
+    - tflite-runtime -> tensowflow-macos, tensorflow-metal(GPU利用)
 
-1. aarch64アーキテクチャのマシンを用意する(raspberry piなど)
-1. 1で用意したマシンにこのリポジトリをクローンする
-```bash
+# ランタイム
+Python3.9
 
-```
-1. Pythonの依存ライブラリインストール&tfliteファイルダウンロード
-```bash
+# セットアップ方法
+
+## raspberry pi
+```shell
+python --version # 3.9.x
 python -m venv venv
 . venv/bin/activate
-(venv) pip install -r requirements.txt
-bash setup.sh
+pip install -r requirements.txt
+```
+
+## Mac (M1)
+前提としてconda環境があることとする
+```shell
+conda create -n cv python=3.9
+conda activate cv
+conda install -c conda-forge opencv
+pip install -r requirements-mac.txt
 ```
 
 # run
 ```bash
-. venv/bin/activate
-python karasu_system.py
+python app/main.py
 ```
-
-# m-template

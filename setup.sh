@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DATA_DIR=$PWD
+DATA_DIR=$PWD/app/detector
 
 # Download TF Lite models
 FILE=${DATA_DIR}/efficientdet_lite0.tflite
