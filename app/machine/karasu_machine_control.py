@@ -1,6 +1,6 @@
 import multiprocessing
 from machine.states import States
-from app.machine.karasu_detector import KarasuDetector
+from machine.karasu_detector import KarasuDetector
 from detector.detector import DetectionObject
 
 

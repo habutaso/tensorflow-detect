@@ -1,6 +1,6 @@
 import sys
 
-from app.machine.karasu_detector import KarasuDetector
+from machine.karasu_detector import KarasuDetector
 from machine.karasu_machine_control import KarasuMachineControl
 from machine.karasu_motor import KarasuMotor, MotorOption, MotorPin
 from utils.coordinate import Coordinate
@@ -75,7 +75,7 @@ def main():
     }
 
     try:
-        detector = Detector(CAMERA_WIDTH, CAMERA_HEIGHT)
+        detector = Detector(CAMERA_WIDTH, CAMERA_HEIGHT, preview=True)
         camera = Camera(1, width=CAMERA_WIDTH, height=CAMERA_HEIGHT, fps=CAMERA_FPS)
 
         karasu_machine = KarasuDetector(detector, camera)

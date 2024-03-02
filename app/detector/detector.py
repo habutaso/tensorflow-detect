@@ -1,6 +1,10 @@
 import cv2
 import numpy as np
-import tensorflow as tf
+try:
+    import tflite_runtime.interpreter as tflite
+except ImportError:
+    import tensorflow as tf
+    tflite = tf.lite
 
 from typing import TypedDict
 
@@ -34,7 +38,7 @@ class Detector:
         self.labels = self.__load_labels(label_path)
 
         # TFLiteモデルのロード
-        self.interpreter = tf.lite.Interpreter(model_path=self.model_path)
+        self.interpreter = tflite.Interpreter(model_path=self.model_path)
         self.interpreter.allocate_tensors()
         # 入出力詳細の取得
         self.input_details = self.interpreter.get_input_details()
