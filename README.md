@@ -11,8 +11,11 @@ Python3.9
 
 # セットアップ方法
 
+`setup.sh`は、tfliteモデルをダウンロードするスクリプトになっている。
+
 ## raspberry pi
 ```shell
+sh setup.sh
 python --version # 3.9.x
 python -m venv venv
 . venv/bin/activate
@@ -22,6 +25,7 @@ pip install -r requirements.txt
 ## Mac (M1)
 前提としてconda環境があることとする
 ```shell
+sh setup.sh
 conda create -n cv python=3.9
 conda activate cv
 conda install -c conda-forge opencv
