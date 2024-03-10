@@ -1,16 +1,15 @@
+import asyncio
 import time
-import random
-
 from transitions import Machine
 
 from detector.detector import Detector
 from devices.camera import Camera
 from machine.states import States
 from detector.detector import DetectionObject
+from karasu_motor import KarasuMotor
 
 
-def random_number():
-    return random.randint(0, 10)
+DETECT_HISTORY_LENGTH = 5
 
 
 transitions = [
@@ -26,10 +25,38 @@ transitions = [
 
 
 class KarasuDetector:
-    def __init__(self, detector: Detector, camera: Camera):
+    def __init__(self, detector: Detector, camera: Camera, motor: KarasuMotor):
         self.machine = Machine(model=self, states=States.states_list, transitions=transitions, initial=States.initial)
         self.detector = detector
+        self.detect_history: list[list[DetectionObject]] = []
         self.camera = camera
+        self.motor = motor
+    
+    def __put_detect_history(self, objects: list[DetectionObject]):
+        if len(self.detect_history) > DETECT_HISTORY_LENGTH:
+            self.detect_history.pop(0)
+        self.detect_history.append(objects)
+    
+    def __is_fully_detected(self) -> bool:
+        return len(self.detect_history) > DETECT_HISTORY_LENGTH and all(self.detect_history)
+    
+    def __centered(self, xcenter: int, ycenter: int) -> bool:
+        return xcenter - self.camera.center["x"] < 10 and ycenter - self.camera.center["y"] < 10
+    
+    def __is_fully_centered(self) -> bool:
+        for object in self.detect_history:
+            box = object[0]["box"]
+            ymin = int(max(1, (box[0] * self.camera.height)))
+            xmin = int(max(1, (box[1] * self.camera.width)))
+            ymax = int(min(self.camera.height, (box[2] * self.camera.height)))
+            xmax = int(min(self.camera.width, (box[3] * self.camera.width)))
+            ycenter = (ymin + ymax) // 2
+            xcenter = (xmin + xmax) // 2
+            if self.__centered(xcenter, ycenter):
+                continue
+            else:
+                return False
+        return True
 
     def __detect_targets(self) -> list[DetectionObject]:
         _, frame = self.camera.device.read()
@@ -39,15 +66,40 @@ class KarasuDetector:
 
         return targets
 
-    def search(self):
+    async def search(self):
         print("探索モード: カラスを探しています...")
+        motor_task = asyncio.create_task(self.motor.search())
+        await motor_task
+        while motor_task.done() is False:
+            targets = self.__detect_targets()
+            self.__put_detect_history(targets)
+            if self.__is_fully_detected():
+                motor_task.cancel()
+                self.detect_history.clear()
+                return True
+            time.sleep(1)
+        return False
 
-        return self.__detect_targets()
-
-    def track(self):
+    async def track(self):
         print("追跡モード: カラスを追跡しています...")
 
-        return self.__detect_targets()
+        while True:
+            targets = self.__detect_targets()
+            self.detect_history.append(targets)
+            if len(self.detect_history) > DETECT_HISTORY_LENGTH * 2:
+                # TODO: カラスを見失った場合の処理
+                pass
+            if len(self.detect_history) > DETECT_HISTORY_LENGTH:
+                if self.__is_fully_centered():
+                    return True
+            # TODO: 座標を取得
+            # targets[0]
+            motor_task = asyncio.create_task(self.motor.track(0, 0))
+            await motor_task
+            if motor_task.done() is False:
+                continue
+        
+        return False
 
     def shoot(self):
         print("射撃モード: カラスを狙っています...")

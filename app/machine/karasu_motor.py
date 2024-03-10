@@ -45,7 +45,7 @@ class KarasuMotor:
         GPIO.setup(self.motor_pin["abort_signal_pin"], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 
-    def search(self):
+    async def search(self):
         p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
         p2 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin2"], self.motor_option["pwm_frequency"])
         p1.start(self.motor_option["duty_cycle_zero"])
@@ -65,12 +65,11 @@ class KarasuMotor:
             p1.ChangeDutyCycle(dr2[i])
             sleep(0.5)
 
-        return False
 
-    def track(self):
+    async def track(self, x: int, y: int):
         pass
 
-    def shoot(self):
+    async def shoot(self):
         pass
 
     def quit(self):

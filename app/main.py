@@ -55,7 +55,7 @@ def abort_callback(channel):
         return
 
 
-def main():
+async def main():
     motor_pin: MotorPin  = {
         "horizon_motor_signal_pin1": HORIZON_MOTOR_SIGNAL_PIN1,
         "horizon_motor_signal_pin2": HORIZON_MOTOR_SIGNAL_PIN2,
@@ -85,7 +85,7 @@ def main():
             ABORT_SIGNAL_PIN, GPIO.RISING, callback=lambda x: abort_callback(karasu_machine, x), bouncetime=200
         )
 
-        KarasuMachineControl(karasu_machine).main_process()
+        await KarasuMachineControl(karasu_machine).main_process()
 
     except KeyboardInterrupt:
         # Ctrl+Cが押された場合の処理
