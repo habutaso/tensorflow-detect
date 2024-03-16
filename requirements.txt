@@ -6,4 +6,5 @@ numpy==1.26.0
 opencv-python~=4.5.3.56
 pyproject-flake8>=6.0.0
 tflite-runtime
-transition
+transitions
+RPi.GPIO

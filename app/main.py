@@ -1,4 +1,8 @@
+import asyncio
 import sys
+import os
+
+from distutils.util import strtobool
 
 from machine.karasu_detector import KarasuDetector
 from machine.karasu_machine_control import KarasuMachineControl
@@ -8,11 +12,15 @@ from utils.coordinate import Coordinate
 from detector.detector import Detector
 from devices.camera import Camera
 
+
 try:
     import RPi.GPIO as GPIO
 except ImportError:
     import Mock.GPIO as GPIO
 
+
+# プレビューの有無
+KARASU_PREVIEW = bool(strtobool(os.getenv("KARASU_PREVIEW", "False"))) or True
 
 # PIN設定
 HORIZON_MOTOR_SIGNAL_PIN1 = 17
@@ -32,9 +40,10 @@ DUTY_CYCLE_LOW = 30
 DUTY_CYCLE_ZERO = 0
 
 # カメラ設定
-CAMERA_WIDTH = 1440
-CAMERA_HEIGHT = 1080
+CAMERA_WIDTH = 800
+CAMERA_HEIGHT = 600
 CAMERA_FPS = 15
+CAMERA_ID = 0
 
 # 物体検知用設定値
 DETECTOR_MODEL_FILENAME = "efficientdet_lite0.tflite"
@@ -75,11 +84,10 @@ async def main():
     }
 
     try:
-        detector = Detector(CAMERA_WIDTH, CAMERA_HEIGHT, preview=True)
-        camera = Camera(1, width=CAMERA_WIDTH, height=CAMERA_HEIGHT, fps=CAMERA_FPS)
-
-        karasu_machine = KarasuDetector(detector, camera)
-        karasu_motor = KarasuMotor(motor_pin, motor_option)
+        detector = Detector(CAMERA_WIDTH, CAMERA_HEIGHT, preview=KARASU_PREVIEW)
+        camera = Camera(CAMERA_ID, width=CAMERA_WIDTH, height=CAMERA_HEIGHT, fps=CAMERA_FPS)
+        motor = KarasuMotor(motor_pin, motor_option)
+        karasu_machine = KarasuDetector(detector, camera, motor)
         # 中断イベント検知を設定
         GPIO.add_event_detect(
             ABORT_SIGNAL_PIN, GPIO.RISING, callback=lambda x: abort_callback(karasu_machine, x), bouncetime=200
@@ -99,4 +107,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

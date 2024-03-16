@@ -6,7 +6,7 @@ from detector.detector import Detector
 from devices.camera import Camera
 from machine.states import States
 from detector.detector import DetectionObject
-from karasu_motor import KarasuMotor
+from .karasu_motor import KarasuMotor
 
 
 DETECT_HISTORY_LENGTH = 5
@@ -31,19 +31,21 @@ class KarasuDetector:
         self.detect_history: list[list[DetectionObject]] = []
         self.camera = camera
         self.motor = motor
-    
+
     def __put_detect_history(self, objects: list[DetectionObject]):
         if len(self.detect_history) > DETECT_HISTORY_LENGTH:
             self.detect_history.pop(0)
         self.detect_history.append(objects)
-    
+
     def __is_fully_detected(self) -> bool:
         return len(self.detect_history) > DETECT_HISTORY_LENGTH and all(self.detect_history)
-    
+
     def __centered(self, xcenter: int, ycenter: int) -> bool:
         return xcenter - self.camera.center["x"] < 10 and ycenter - self.camera.center["y"] < 10
-    
+
     def __is_fully_centered(self) -> bool:
+        if len(self.detect_history) < 1:
+            return False
         for object in self.detect_history:
             box = object[0]["box"]
             ymin = int(max(1, (box[0] * self.camera.height)))
@@ -66,10 +68,14 @@ class KarasuDetector:
 
         return targets
 
-    async def search(self):
+    async def search(self) -> bool:
+        """カラスを探す
+
+        Returns:
+            bool: True: カラスを見つけた, False: カラスを見つけられなかった
+        """
         print("探索モード: カラスを探しています...")
         motor_task = asyncio.create_task(self.motor.search())
-        await motor_task
         while motor_task.done() is False:
             targets = self.__detect_targets()
             self.__put_detect_history(targets)
@@ -77,34 +83,38 @@ class KarasuDetector:
                 motor_task.cancel()
                 self.detect_history.clear()
                 return True
-            time.sleep(1)
+            await asyncio.sleep(0.5)
         return False
 
-    async def track(self):
+    async def track(self) -> bool:
+        """カラスを追跡する
+
+        Returns:
+            bool: True: カラスを中心に捉えた, False: カラスを見失った
+        """
         print("追跡モード: カラスを追跡しています...")
 
         while True:
             targets = self.__detect_targets()
             self.detect_history.append(targets)
             if len(self.detect_history) > DETECT_HISTORY_LENGTH * 2:
-                # TODO: カラスを見失った場合の処理
-                pass
+                break
             if len(self.detect_history) > DETECT_HISTORY_LENGTH:
                 if self.__is_fully_centered():
                     return True
-            # TODO: 座標を取得
-            # targets[0]
-            motor_task = asyncio.create_task(self.motor.track(0, 0))
+            # TODO: カラスの位置を算出する
+            target_x = targets[0]["box"][1]
+            motor_task = asyncio.create_task(self.motor.track(target_x, 0))
             await motor_task
-            if motor_task.done() is False:
-                continue
-        
+            await asyncio.sleep(0.3)
+
         return False
 
-    def shoot(self):
+    async def shoot(self):
         print("射撃モード: カラスを狙っています...")
+        motor_task = asyncio.create_task(self.motor.shoot())
+        await motor_task
 
-        time.sleep(2)
         print("カラスを撃ちました")
         return 1
 

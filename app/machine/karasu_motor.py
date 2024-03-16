@@ -1,7 +1,9 @@
+import asyncio
 from time import sleep
 from typing import TypedDict
+
 try:
-    import RPi.GPIO as GPIO
+    import RPi.GPIO as GPIO  # type: ignore
 except ImportError:
     import Mock.GPIO as GPIO
 
@@ -13,6 +15,7 @@ class MotorPin(TypedDict):
     vertical_motor_signal_pin2: int
     abort_signal_pin: int
     laser_pin: int
+
 
 class MotorOption(TypedDict):
     pwm_frequency: int
@@ -44,7 +47,6 @@ class KarasuMotor:
         # 中断信号設定
         GPIO.setup(self.motor_pin["abort_signal_pin"], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-
     async def search(self):
         p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
         p2 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin2"], self.motor_option["pwm_frequency"])
@@ -59,18 +61,42 @@ class KarasuMotor:
         for i in range(5):
             p1.ChangeDutyCycle(dr1[i])
             p2.ChangeDutyCycle(dr2[i])
-            sleep(0.5)
+            await asyncio.sleep(0.5)
         for i in range(5):
             p2.ChangeDutyCycle(dr1[i])
             p1.ChangeDutyCycle(dr2[i])
-            sleep(0.5)
+            await asyncio.sleep(0.5)
 
+    async def track(self, x_center_diff: int, y: int):
+        p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
+        p2 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin2"], self.motor_option["pwm_frequency"])
+        p1.start(self.motor_option["duty_cycle_zero"])
+        p2.start(self.motor_option["duty_cycle_medium"])
 
-    async def track(self, x: int, y: int):
-        pass
+        dr1, dr2 = (
+            (self.motor_option["duty_cycle_zero"], self.motor_option["duty_cycle_medium"])
+            if x_center_diff < 0
+            else (self.motor_option["duty_cycle_medium"], self.motor_option["duty_cycle_zero"])
+        )
+
+        for _ in range(2):
+            p1.ChangeDutyCycle(dr1)
+            p2.ChangeDutyCycle(dr2)
+            await asyncio.sleep(0.05)
 
     async def shoot(self):
-        pass
+        p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
+        p2 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin2"], self.motor_option["pwm_frequency"])
+        p1.start(self.motor_option["duty_cycle_zero"])
+        p2.start(self.motor_option["duty_cycle_zero"])
+
+        dr1 = [self.motor_option["duty_cycle_high"], self.motor_option["duty_cycle_zero"]] * 8
+        dr2 = dr1[::-1]
+
+        for c1, c2 in zip(dr1, dr2):
+            p1.ChangeDutyCycle(c1)
+            p2.ChangeDutyCycle(c2)
+            await asyncio.sleep(0.1)
 
     def quit(self):
         pass
