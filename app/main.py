@@ -1,4 +1,3 @@
-import asyncio
 import sys
 import os
 
@@ -64,14 +63,14 @@ def abort_callback(channel):
         return
 
 
-async def main():
-    motor_pin: MotorPin  = {
+def main():
+    motor_pin: MotorPin = {
         "horizon_motor_signal_pin1": HORIZON_MOTOR_SIGNAL_PIN1,
         "horizon_motor_signal_pin2": HORIZON_MOTOR_SIGNAL_PIN2,
         "vertical_motor_signal_pin1": VERTICAL_MOTOR_SIGNAL_PIN1,
         "vertical_motor_signal_pin2": VERTICAL_MOTOR_SIGNAL_PIN2,
         "laser_pin": LASER_PIN,
-        "abort_signal_pin": ABORT_SIGNAL_PIN
+        "abort_signal_pin": ABORT_SIGNAL_PIN,
     }
 
     motor_option: MotorOption = {
@@ -80,7 +79,7 @@ async def main():
         "duty_cycle_low": DUTY_CYCLE_LOW,
         "duty_cycle_medium": DUTY_CYCLE_MIDDLE,
         "duty_cycle_high": DUTY_CYCLE_HIGHT,
-        "duty_cycle_max": DUTY_CYCLE_MAX
+        "duty_cycle_max": DUTY_CYCLE_MAX,
     }
 
     try:
@@ -93,13 +92,12 @@ async def main():
             ABORT_SIGNAL_PIN, GPIO.RISING, callback=lambda x: abort_callback(karasu_machine, x), bouncetime=200
         )
 
-        await KarasuMachineControl(karasu_machine).main_process()
+        KarasuMachineControl(karasu_machine).main_process()
 
     except KeyboardInterrupt:
         # Ctrl+Cが押された場合の処理
         pass
-    except Exception as e:
-        print(e)
+    # except Exception as e:
     finally:
         # プログラム終了時にGPIOをクリーンアップ
         print("GPIOをクリーンアップ...")
@@ -107,4 +105,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

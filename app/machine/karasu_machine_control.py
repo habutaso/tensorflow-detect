@@ -1,5 +1,3 @@
-import asyncio
-
 from machine.states import States
 from machine.karasu_detector import KarasuDetector
 from detector.detector import DetectionObject
@@ -10,12 +8,11 @@ class KarasuMachineControl:
         self.machine = machine
         self.machine.initialize_done()
 
-    async def main_process(self):
+    def main_process(self):
         while True:
             if self.machine.state == States.search:
 
-                event_loop = asyncio.get_event_loop()
-                result = event_loop.run_until_complete(self.machine.search())
+                result = self.machine.search()
 
                 if result:
                     print("見つかりました")
@@ -24,8 +21,7 @@ class KarasuMachineControl:
                     print("見つかりませんでした")
                     self.machine.no_crow_detected()
             elif self.machine.state == States.tracking:
-                event_loop = asyncio.get_event_loop()
-                result = event_loop.run_until_complete(self.machine.track())
+                result = self.machine.track()
 
                 if result:
                     print("カラスを捕らえました")
@@ -35,7 +31,7 @@ class KarasuMachineControl:
                     self.machine.lose_sight_of_crow()
 
             elif self.machine.state == States.shooting:
-                result = await self.machine.shoot()
+                result = self.machine.shoot()
 
                 if result == 1:
                     print("射撃完了")

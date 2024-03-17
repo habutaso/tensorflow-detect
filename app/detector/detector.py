@@ -8,6 +8,7 @@ except ImportError:
 
     tflite = tf.lite
 
+from machine.states import States
 from typing import TypedDict
 
 MODEL_PATH = "./app/detector/efficientdet_lite0.tflite"
@@ -58,7 +59,17 @@ class Detector:
     def __detect_labels(self, class_ids: list[int]):
         return [self.labels[int(cid)] for cid in class_ids]
 
-    def __preview_detect(self, frame, boxes, classes, scores, labels):
+    def __preview_color(self, states: States):
+        if states == States.search:
+            return (0, 255, 0)
+        elif states == States.tracking:
+            return (0, 0, 255)
+        elif states == States.shooting:
+            return (255, 0, 0)
+        return (0, 0, 0)
+
+    def __preview_detect(self, frame, boxes, classes, scores, labels, preview_mode):
+        preview_color = self.__preview_color(preview_mode)
         for box, cls, score, label in zip(boxes, classes, scores, labels):
             if score > self.threshold and score <= 1.0:
                 ymin = int(max(1, (box[0] * self.image_height)))
@@ -66,7 +77,7 @@ class Detector:
                 ymax = int(min(self.image_height, (box[2] * self.image_height)))
                 xmax = int(min(self.image_width, (box[3] * self.image_width)))
 
-                cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (10, 255, 0), 4)
+                cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), preview_color, 4)
 
                 label = "%s: %d%%" % (label, int(score * 100))
                 labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
@@ -83,7 +94,7 @@ class Detector:
                     frame,
                     (xmin + (xmax - xmin) // 2, ymin + (ymax - ymin) // 2),
                     (self.image_width // 2, self.image_height // 2),
-                    (10, 255, 0),
+                    preview_color,
                     2,
                 )
                 cv2.putText(frame, label, (xmin, label_ymin - 7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
@@ -91,7 +102,7 @@ class Detector:
         cv2.imshow("Object detector", frame)
         cv2.waitKey(1)
 
-    def detect(self, frame) -> DetectionResult:
+    def detect(self, frame, preview_mode: States = States.search) -> DetectionResult:
         # 画像の前処理
         input_image = cv2.resize(frame, (self.input_details[0]["shape"][2], self.input_details[0]["shape"][1]))
         dimmed_image = np.expand_dims(input_image, axis=0)
@@ -113,7 +124,7 @@ class Detector:
 
         if self.preview:
             preview_resized_frame = cv2.resize(frame, (self.image_width, self.image_height))
-            self.__preview_detect(preview_resized_frame, boxes, classes, scores, labels)
+            self.__preview_detect(preview_resized_frame, boxes, classes, scores, labels, preview_mode)
 
         return {
             "frame": input_image,

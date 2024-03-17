@@ -1,4 +1,3 @@
-import asyncio
 from time import sleep
 from typing import TypedDict
 
@@ -47,27 +46,26 @@ class KarasuMotor:
         # 中断信号設定
         GPIO.setup(self.motor_pin["abort_signal_pin"], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-    async def search(self):
+    def search(self, search_count: int) -> int:
         p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
         p2 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin2"], self.motor_option["pwm_frequency"])
         p1.start(self.motor_option["duty_cycle_zero"])
         p2.start(self.motor_option["duty_cycle_zero"])
 
         # 左右にフリフリする処理　徐々に速度をあげ、徐々に下げる、逆回転させる
-        # dr1=[DUTY_CYCLE_LOW  ,DUTY_CYCLE_LOW,DUTY_CYCLE_LOW ,DUTY_CYCLE_LOW ,DUTY_CYCLE_LOW ]
-        dr1 = [self.motor_option["duty_cycle_low"]] * 5
-        dr2 = [self.motor_option["duty_cycle_zero"]] * 5
+        dr1 = self.motor_option["duty_cycle_low"]
+        dr2 = self.motor_option["duty_cycle_zero"]
 
-        for i in range(5):
-            p1.ChangeDutyCycle(dr1[i])
-            p2.ChangeDutyCycle(dr2[i])
-            await asyncio.sleep(0.5)
-        for i in range(5):
-            p2.ChangeDutyCycle(dr1[i])
-            p1.ChangeDutyCycle(dr2[i])
-            await asyncio.sleep(0.5)
+        if search_count % 10 < 5:
+            p1.ChangeDutyCycle(dr1)
+            p2.ChangeDutyCycle(dr2)
+        else:
+            p2.ChangeDutyCycle(dr1)
+            p1.ChangeDutyCycle(dr2)
 
-    async def track(self, x_center_diff: int, y: int):
+        return search_count + 1
+
+    def track(self, x_center_diff: int, y: int):
         p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
         p2 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin2"], self.motor_option["pwm_frequency"])
         p1.start(self.motor_option["duty_cycle_zero"])
@@ -82,9 +80,9 @@ class KarasuMotor:
         for _ in range(2):
             p1.ChangeDutyCycle(dr1)
             p2.ChangeDutyCycle(dr2)
-            await asyncio.sleep(0.05)
+            sleep(0.05)
 
-    async def shoot(self):
+    def shoot(self):
         p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
         p2 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin2"], self.motor_option["pwm_frequency"])
         p1.start(self.motor_option["duty_cycle_zero"])
@@ -96,7 +94,7 @@ class KarasuMotor:
         for c1, c2 in zip(dr1, dr2):
             p1.ChangeDutyCycle(c1)
             p2.ChangeDutyCycle(c2)
-            await asyncio.sleep(0.1)
+            sleep(0.1)
 
     def quit(self):
         pass
