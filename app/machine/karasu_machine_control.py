@@ -14,7 +14,8 @@ class KarasuMachineControl:
         while True:
             if self.machine.state == States.search:
 
-                result = await self.machine.search()
+                event_loop = asyncio.get_event_loop()
+                result = event_loop.run_until_complete(self.machine.search())
 
                 if result:
                     print("見つかりました")
@@ -23,7 +24,8 @@ class KarasuMachineControl:
                     print("見つかりませんでした")
                     self.machine.no_crow_detected()
             elif self.machine.state == States.tracking:
-                result = await self.machine.track()
+                event_loop = asyncio.get_event_loop()
+                result = event_loop.run_until_complete(self.machine.track())
 
                 if result:
                     print("カラスを捕らえました")
@@ -38,3 +40,5 @@ class KarasuMachineControl:
                 if result == 1:
                     print("射撃完了")
                     self.machine.shooting_done()
+
+        return 0

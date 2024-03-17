@@ -1,6 +1,6 @@
 import asyncio
 import time
-from transitions import Machine
+from transitions.extensions import AsyncMachine
 
 from detector.detector import Detector
 from devices.camera import Camera
@@ -26,7 +26,9 @@ transitions = [
 
 class KarasuDetector:
     def __init__(self, detector: Detector, camera: Camera, motor: KarasuMotor):
-        self.machine = Machine(model=self, states=States.states_list, transitions=transitions, initial=States.initial)
+        self.machine = AsyncMachine(
+            model=self, states=States.states_list, transitions=transitions, initial=States.initial
+        )
         self.detector = detector
         self.detect_history: list[list[DetectionObject]] = []
         self.camera = camera
@@ -103,6 +105,8 @@ class KarasuDetector:
                 if self.__is_fully_centered():
                     return True
             # TODO: カラスの位置を算出する
+            if not targets:
+                continue
             target_x = targets[0]["box"][1]
             motor_task = asyncio.create_task(self.motor.track(target_x, 0))
             await motor_task
