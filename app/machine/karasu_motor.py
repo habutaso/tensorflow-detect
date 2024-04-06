@@ -29,6 +29,7 @@ class KarasuMotor:
     def __init__(self, motor_pin: MotorPin, motor_option: MotorOption):
         self.motor_pin = motor_pin
         self.motor_option = motor_option
+        self.motor_cycle_count = 0
         self.init_pin_setting()
 
     def init_pin_setting(self):
@@ -46,7 +47,7 @@ class KarasuMotor:
         # 中断信号設定
         GPIO.setup(self.motor_pin["abort_signal_pin"], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-    def search(self, search_count: int) -> int:
+    def search(self, search_count: int) -> None:
         p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
         p2 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin2"], self.motor_option["pwm_frequency"])
         p1.start(self.motor_option["duty_cycle_zero"])
@@ -56,16 +57,17 @@ class KarasuMotor:
         dr1 = self.motor_option["duty_cycle_low"]
         dr2 = self.motor_option["duty_cycle_zero"]
 
-        if search_count % 10 < 5:
+        if self.motor_cycle_count % 10 < 5:
             p1.ChangeDutyCycle(dr1)
             p2.ChangeDutyCycle(dr2)
         else:
             p2.ChangeDutyCycle(dr1)
             p1.ChangeDutyCycle(dr2)
+        sleep(0.02)
 
-        return search_count + 1
+        self.motor_cycle_count = (self.motor_cycle_count + 1) % 10
 
-    def track(self, x_center_diff: int, y: int):
+    def track(self, x_center_diff: int, y: int) -> None:
         p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
         p2 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin2"], self.motor_option["pwm_frequency"])
         p1.start(self.motor_option["duty_cycle_zero"])
@@ -82,7 +84,7 @@ class KarasuMotor:
             p2.ChangeDutyCycle(dr2)
             sleep(0.05)
 
-    def shoot(self):
+    def shoot(self) -> None:
         p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
         p2 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin2"], self.motor_option["pwm_frequency"])
         p1.start(self.motor_option["duty_cycle_zero"])

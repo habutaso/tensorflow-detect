@@ -1,3 +1,4 @@
+import multiprocessing
 import time
 from transitions import Machine
 
@@ -62,7 +63,9 @@ class KarasuDetector:
         return True
 
     def __detect_targets(self, preview_mode: States) -> list[DetectionObject]:
-        _, frame = self.camera.device.read()
+        frame = self.camera.read()
+        if frame is None:
+            return []
         decisions = self.detector.detect(frame, preview_mode=preview_mode)
 
         targets = [target for target in decisions["detection_result"] if target["label"] == "bird"]
@@ -80,12 +83,16 @@ class KarasuDetector:
 
         while count < 9:
             print("探索モード: カラスを探しています...")
-            count = self.motor.search(search_count=count)
+            motor_process = multiprocessing.Process(target=self.motor.search, args=(count,))
+            motor_process.start()
+            # count = self.motor.search(search_count=count)
             targets = self.__detect_targets(preview_mode=States.search)
             self.__put_detect_history(targets)
             if self.__is_fully_detected():
                 self.detect_history.clear()
                 return True
+            motor_process.join()
+            count += 1
             time.sleep(0.5)
         return False
 

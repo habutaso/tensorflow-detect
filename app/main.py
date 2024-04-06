@@ -92,16 +92,20 @@ def main():
             ABORT_SIGNAL_PIN, GPIO.RISING, callback=lambda x: abort_callback(karasu_machine, x), bouncetime=200
         )
 
+        camera.start_streaming()
         KarasuMachineControl(karasu_machine).main_process()
 
     except KeyboardInterrupt:
         # Ctrl+Cが押された場合の処理
         pass
-    # except Exception as e:
+    except Exception as e:
+        print(e, file=sys.stderr)
     finally:
         # プログラム終了時にGPIOをクリーンアップ
         print("GPIOをクリーンアップ...")
+        camera.release()
         GPIO.cleanup()
+        exit(0)
 
 
 if __name__ == "__main__":
