@@ -31,6 +31,7 @@ class KarasuDetector:
         self.detect_history: list[list[DetectionObject]] = []
         self.camera = camera
         self.motor = motor
+        self.motor_process = multiprocessing.Process(target=lambda : True)
 
     def __put_detect_history(self, objects: list[DetectionObject]):
         if len(self.detect_history) > DETECT_HISTORY_LENGTH:
@@ -79,21 +80,23 @@ class KarasuDetector:
         Returns:
             bool: True: カラスを見つけた, False: カラスを見つけられなかった
         """
+        self.motor_process = multiprocessing.Process(target=self.motor.search, args=(count,))
+        self.motor_process.start()
         count = 0
 
         while count < 9:
             print("探索モード: カラスを探しています...")
-            motor_process = multiprocessing.Process(target=self.motor.search, args=(count,))
-            motor_process.start()
             # count = self.motor.search(search_count=count)
             targets = self.__detect_targets(preview_mode=States.search)
             self.__put_detect_history(targets)
             if self.__is_fully_detected():
                 self.detect_history.clear()
+                self.motor_process.kill()
                 return True
-            motor_process.join()
             count += 1
             time.sleep(0.5)
+        self.motor_process.join()
+        self.motor_process.kill()
         return False
 
     def track(self) -> bool:
@@ -137,3 +140,7 @@ class KarasuDetector:
 
     def quit(self):
         print("終了します...")
+
+    def kill(self):
+        self.motor_process.kill()
+

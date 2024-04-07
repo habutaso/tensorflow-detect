@@ -27,7 +27,7 @@ HORIZON_MOTOR_SIGNAL_PIN2 = 18
 VERTICAL_MOTOR_SIGNAL_PIN1 = 22
 VERTICAL_MOTOR_SIGNAL_PIN2 = 23
 ABORT_SIGNAL_PIN = 5
-LASER_PIN = 9
+LASER_PIN = 14
 
 PWM_FREQUENCY = 1000  # PWMの周波数(回転速度やトルク、雑音に影響)
 
@@ -35,7 +35,7 @@ PWM_FREQUENCY = 1000  # PWMの周波数(回転速度やトルク、雑音に影�
 DUTY_CYCLE_MAX = 100
 DUTY_CYCLE_HIGHT = 80
 DUTY_CYCLE_MIDDLE = 60
-DUTY_CYCLE_LOW = 30
+DUTY_CYCLE_LOW = 25
 DUTY_CYCLE_ZERO = 0
 
 # カメラ設定
@@ -62,6 +62,13 @@ def abort_callback(channel):
     else:
         return
 
+def abort():
+    print("gpioをクリーンアップ...")
+    motor.kill()
+    print("detector was released")
+    camera.release()
+    print("camera was released")
+    exit(0)
 
 def main():
     motor_pin: MotorPin = {
@@ -83,6 +90,7 @@ def main():
     }
 
     try:
+        GPIO.cleanup()
         detector = Detector(CAMERA_WIDTH, CAMERA_HEIGHT, preview=KARASU_PREVIEW)
         camera = Camera(CAMERA_ID, width=CAMERA_WIDTH, height=CAMERA_HEIGHT, fps=CAMERA_FPS)
         motor = KarasuMotor(motor_pin, motor_option)
@@ -97,14 +105,23 @@ def main():
 
     except KeyboardInterrupt:
         # Ctrl+Cが押された場合の処理
+        print("keyboard interrupt")
+        motor.kill()
+        print("detector was released")
+        camera.release()
+        print("camera was released")
+        exit(0)
+        
         pass
     except Exception as e:
         print(e, file=sys.stderr)
     finally:
         # プログラム終了時にGPIOをクリーンアップ
         print("GPIOをクリーンアップ...")
+        motor.kill()
+        print("detector was released")
         camera.release()
-        GPIO.cleanup()
+        print("camera was released")
         exit(0)
 
 

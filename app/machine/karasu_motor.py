@@ -29,7 +29,7 @@ class KarasuMotor:
     def __init__(self, motor_pin: MotorPin, motor_option: MotorOption):
         self.motor_pin = motor_pin
         self.motor_option = motor_option
-        self.motor_cycle_count = 0
+        self.motor_count = 0
         self.init_pin_setting()
 
     def init_pin_setting(self):
@@ -57,15 +57,19 @@ class KarasuMotor:
         dr1 = self.motor_option["duty_cycle_low"]
         dr2 = self.motor_option["duty_cycle_zero"]
 
-        if self.motor_cycle_count % 10 < 5:
-            p1.ChangeDutyCycle(dr1)
-            p2.ChangeDutyCycle(dr2)
-        else:
-            p2.ChangeDutyCycle(dr1)
-            p1.ChangeDutyCycle(dr2)
-        sleep(0.02)
-
-        self.motor_cycle_count = (self.motor_cycle_count + 1) % 10
+        while self.motor_count < 10:
+            if search_count % 10 < 5:
+                p1.ChangeDutyCycle(dr1)
+                p2.ChangeDutyCycle(dr2)
+            else:
+                p2.ChangeDutyCycle(dr1)
+                p1.ChangeDutyCycle(dr2)
+            sleep(0.2)
+            p1.ChangeDutyCycle(self.motor_option["duty_cycle_zero"])
+            p2.ChangeDutyCycle(self.motor_option["duty_cycle_zero"])
+            sleep(1)
+            self.motor_count += 1
+        self.motor_count = 0
 
     def track(self, x_center_diff: int, y: int) -> None:
         p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
@@ -97,6 +101,11 @@ class KarasuMotor:
             p1.ChangeDutyCycle(c1)
             p2.ChangeDutyCycle(c2)
             sleep(0.1)
+
+    def kill(self):
+        print("kill all pin ...")
+        for pin in self.motor_pin.values():
+            GPIO.cleanup(pin)
 
     def quit(self):
         pass

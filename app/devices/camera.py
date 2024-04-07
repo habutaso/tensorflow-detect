@@ -22,6 +22,7 @@ class Camera:
         self.width = width
         self.height = height
         self.__device = cv2.VideoCapture(camera_id)
+        self.__terminate_camera_thread = threading.Event()
         self.__fps = fps
         self.__queue_denominator = queue_denominator
         self.__queue_interval = self.__fps // self.__queue_denominator
@@ -51,15 +52,17 @@ class Camera:
         return deepcopy(self.__buffer_image)
 
     def stream(self):
-        while self.__device.isOpened():
-            _, frame = self.__device.read()
-            self.__buffer_image = frame
-            time.sleep(0.01)
+        while not self.__terminate_camera_thread.is_set():
+            if self.__device.isOpened():
+                _, frame = self.__device.read()
+                self.__buffer_image = frame
+                time.sleep(0.01)
 
     def release(self):
-        if self.__thread:
-            self.__thread.join()
+        print("release camera process ...")
+        self.__terminate_camera_thread.set()
         self.__device.release()
+        exit(0)
 
     def start_streaming(self):
         self.__thread = threading.Thread(target=self.stream, daemon=True)
