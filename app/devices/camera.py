@@ -8,6 +8,7 @@ DEFAULT_FPS = 30
 DEFAULT_WIDTH = 640
 DEFAULT_HEIGHT = 480
 DEFAULT_QUEUE_DENOMINATOR = 2
+DEFAULT_FLIP = True
 
 
 class Camera:
@@ -18,6 +19,7 @@ class Camera:
         width: int = DEFAULT_WIDTH,
         height: int = DEFAULT_HEIGHT,
         queue_denominator: int = DEFAULT_QUEUE_DENOMINATOR,
+        is_flip: bool = True
     ):
         self.width = width
         self.height = height
@@ -29,6 +31,7 @@ class Camera:
         self.__queue_count = 0
         self.__buffer_image = None
         self.__thread = None
+        self.__is_flip = is_flip
 
         self.set_fps(fps)
         self.set_wh(self.width, self.height)
@@ -55,6 +58,8 @@ class Camera:
         while not self.__terminate_camera_thread.is_set():
             if self.__device.isOpened():
                 _, frame = self.__device.read()
+                if self.__is_flip:
+                    frame = cv2.rotate(frame, cv2.ROTATE_180)
                 self.__buffer_image = frame
                 time.sleep(0.01)
 

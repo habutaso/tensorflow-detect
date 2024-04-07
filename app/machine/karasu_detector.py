@@ -80,11 +80,11 @@ class KarasuDetector:
         Returns:
             bool: True: カラスを見つけた, False: カラスを見つけられなかった
         """
+        count = 0
         self.motor_process = multiprocessing.Process(target=self.motor.search, args=(count,))
         self.motor_process.start()
-        count = 0
 
-        while count < 9:
+        while self.motor_process.is_alive():
             print("探索モード: カラスを探しています...")
             # count = self.motor.search(search_count=count)
             targets = self.__detect_targets(preview_mode=States.search)
@@ -94,9 +94,10 @@ class KarasuDetector:
                 self.motor_process.kill()
                 return True
             count += 1
-            time.sleep(0.5)
+            time.sleep(0.1)
         self.motor_process.join()
         self.motor_process.kill()
+        print("search process end")
         return False
 
     def track(self) -> bool:
@@ -124,10 +125,11 @@ class KarasuDetector:
             xmin = int(max(1, (box[1] * self.detector.image_width)))
             xmax = int(min(self.detector.image_width, (box[3] * self.detector.image_width)))
             target_x = (xmin + xmax) // 2
-            print(f"カラスの位置: {target_x}")
-            self.motor.track(target_x, 0)
+            relative_target_x = target_x - (self.detector.image_width // 2)
+            print(f"カラスの位置: {relative_target_x}, camera center: {self.detector.image_width // 2}")
+            self.motor.track(relative_target_x, 0)
 
-            time.sleep(0.2)
+            time.sleep(0.1)
 
         return False
 

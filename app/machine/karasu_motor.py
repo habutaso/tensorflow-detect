@@ -58,18 +58,22 @@ class KarasuMotor:
         dr2 = self.motor_option["duty_cycle_zero"]
 
         while self.motor_count < 10:
-            if search_count % 10 < 5:
+            print(self.motor_count, self.motor_count % 10, (self.motor_count % 10) < 5)
+            if (self.motor_count % 10) < 5:
+                print("left")
                 p1.ChangeDutyCycle(dr1)
                 p2.ChangeDutyCycle(dr2)
             else:
+                print("right")
                 p2.ChangeDutyCycle(dr1)
                 p1.ChangeDutyCycle(dr2)
             sleep(0.2)
             p1.ChangeDutyCycle(self.motor_option["duty_cycle_zero"])
             p2.ChangeDutyCycle(self.motor_option["duty_cycle_zero"])
-            sleep(1)
+            sleep(4)
             self.motor_count += 1
         self.motor_count = 0
+        print("search end")
 
     def track(self, x_center_diff: int, y: int) -> None:
         p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
@@ -83,16 +87,19 @@ class KarasuMotor:
             else (self.motor_option["duty_cycle_medium"], self.motor_option["duty_cycle_zero"])
         )
 
-        for _ in range(2):
-            p1.ChangeDutyCycle(dr1)
-            p2.ChangeDutyCycle(dr2)
-            sleep(0.05)
+        sleep_time = (abs(x_center_diff) / 3000)
+        print(f"sleep time: {sleep_time}")
+
+        p1.ChangeDutyCycle(dr1)
+        p2.ChangeDutyCycle(dr2)
+        sleep(sleep_time)
 
     def shoot(self) -> None:
         p1 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin1"], self.motor_option["pwm_frequency"])
         p2 = GPIO.PWM(self.motor_pin["horizon_motor_signal_pin2"], self.motor_option["pwm_frequency"])
         p1.start(self.motor_option["duty_cycle_zero"])
         p2.start(self.motor_option["duty_cycle_zero"])
+        GPIO.output(self.motor_pin["laser_pin"], 1)
 
         dr1 = [self.motor_option["duty_cycle_high"], self.motor_option["duty_cycle_zero"]] * 8
         dr2 = dr1[::-1]
@@ -101,6 +108,9 @@ class KarasuMotor:
             p1.ChangeDutyCycle(c1)
             p2.ChangeDutyCycle(c2)
             sleep(0.1)
+            p1.ChangeDutyCycle(self.motor_option["duty_cycle_zero"])
+            p2.ChangeDutyCycle(self.motor_option["duty_cycle_zero"])
+        GPIO.output(self.motor_pin["laser_pin"], 0)
 
     def kill(self):
         print("kill all pin ...")
